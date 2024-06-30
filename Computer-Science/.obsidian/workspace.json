@@ -4,33 +4,19 @@
     "type": "split",
     "children": [
       {
-        "id": "e28869cfe25fdc23",
+        "id": "6a4822fd0ac22aab",
         "type": "tabs",
         "children": [
           {
-            "id": "55b5b62fe6e50250",
+            "id": "0929e4c6613f984f",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "INTRO CS/Introduction to Programming/Welcome.md",
+                "file": "DVWA/README.md",
                 "mode": "source",
                 "source": false
               }
-            }
-          }
-        ]
-      },
-      {
-        "id": "91d7d5e5cb8a8728",
-        "type": "tabs",
-        "children": [
-          {
-            "id": "a2a9f26d653b6058",
-            "type": "leaf",
-            "state": {
-              "type": "graph",
-              "state": {}
             }
           }
         ]
@@ -99,7 +85,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "INTRO CS/Introduction to Programming/Welcome.md",
+                "file": "DVWA/README.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -116,7 +102,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "INTRO CS/Introduction to Programming/Welcome.md",
+                "file": "DVWA/README.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -139,7 +125,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "INTRO CS/Introduction to Programming/Welcome.md"
+                "file": "DVWA/README.md"
               }
             }
           }
@@ -160,13 +146,19 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "f655991fbfd09cb9",
+  "active": "0929e4c6613f984f",
   "lastOpenFiles": [
-    "Untitled",
+    "DWA/README.md",
+    "DVWA/README.md",
+    "DVWA",
+    "DWA",
+    "Untitled.md",
+    "INTRO CS/Introduction to Programming/Welcome.md",
+    "2024-06-30.md",
+    "Untitled.canvas",
     "Test",
     "INTRO CS/Introduction to Computer Science",
     "INTRO CS/Introduction to Programming",
-    "INTRO CS",
-    "INTRO CS/Introduction to Programming/Welcome.md"
+    "INTRO CS"
   ]
 }
