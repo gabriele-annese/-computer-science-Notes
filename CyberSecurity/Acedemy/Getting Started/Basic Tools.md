@@ -27,7 +27,7 @@ SSH-2.0-OpenSSH_8.4p1 Debian-3
 
 ```
 
-in Linux is preinstalled and it's possible download it in Windows. In windows exist an alternative called **PowerCat** running on powershell.
+in Linux is preinstalled and it's possible download it in Windows. In windows exist an alternative called **[PowerCat](https://github.com/besimorhino/powercat)** running on powershell.
 
 ## Socat
 Socat is a powerful Netcat tool. Socat can forwarding ports and can manage different device. Whit socat it's possible upgrade the shell to obtain a **shell to a fully interface (TTY)**. Socat is a simple binary this means is transportable in a infected machine to have better connection.
