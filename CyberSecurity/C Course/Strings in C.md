@@ -18,7 +18,8 @@ A string in C has a very special characteristic that makes it amazing, but also 
 If you run operation like strcpy, it will ONLY STOP COPYING OR PRINTING IF IT ENCOUNTERS THAT ZERO BYTE. So the code above actually has a pretty major security vulnerability. You have to make sure your strings end with a zero otherwise thing will go sideways.
 
 ```C
-char my_str[] = {'h', 'e', 'l', 'l', 'o', 0}; printf("%s\n", my_str);
+char my_str[] = {'h', 'e', 'l', 'l', 'o', 0}; 
+printf("%s\n", my_str);
 
 // if u use the syntax below the null byte is set by default 
 char *myotherstr = "hello";
