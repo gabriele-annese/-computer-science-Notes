@@ -204,6 +204,23 @@ ldapsearch -H LDAP://10.129.211.144 -x -s base namingcontexts
 The `namingcontexts` attribute lists the **base Distinguished Name (DNs)** of all **naming contexts** that the LDAP server knows about.
 
 Think of naming context as **entry point or "root containers"** in the LDAP directory tree where different categories of data are stored. Each one represents different **subtree** of the directory
+### LDAP - Users
+```powershell
+Get-ADObject -LDAPFilter '(&(objectCategory=person)(objectClass=user))' | select name
+```
+### LDAP - Groups
+```powershell
+Get-ADObject -LDAPFilter '(objectClass=group)' | select name
+```
+
+### LDAP - All domain controllers
+```powershell
+Get-ADObject -LDAPFilter '(&(objectCategory=Computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))' | select name
+```
+### LDAP - Count
+```powershell
+Get-ADObject -LDAPFilter '(objectClass=group)' -Properties * | Measure-Object | Select-Object -ExpandProperty Count
+```
 
 # ACL Abuse
 

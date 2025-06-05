@@ -32,7 +32,7 @@ LDAP queries can be used to perform user-related searches, such as "`(&(objectCa
 
 #### LDAP Query - User Related Search
 
-```powershell-session
+```powershell
 PS C:\htb> Get-ADObject -LDAPFilter '(objectClass=group)' | select name
 
 name
@@ -66,7 +66,7 @@ We can also use LDAP queries to perform more detailed searches. This query searc
 
 #### LDAP Query - Detailed Search
 
-```powershell-session
+```powershell
 PS C:\htb> Get-ADObject -LDAPFilter '(&(objectCategory=person)(objectClass=user)(userAccountControl:1.2.840.113556.1.4.803:=2))' -Properties * | select samaccountname,useraccountcontrol
 
 samaccountname                                                         useraccountcontrol
@@ -94,3 +94,4 @@ More examples of basic and more advanced `LDAP` queries for AD can be found at
 - LDAP queries related to AD [groups](https://ldapwiki.com/wiki/Wiki.jsp?page=Active%20Directory%20Group%20Related%20Searches)
 
 `LDAP` queries are extremely powerful tools for querying Active Directory. We can harness their power to gather a wide variety of information, map out the AD environment, and hunt for misconfigurations. LDAP queries can be combined with filters to perform even more granular searches. The next two sections will cover both AD and LDAP search filters in-depth to prepare us for introducing a variety of AD enumeration tools in subsequent modules.
+

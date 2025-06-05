@@ -107,7 +107,7 @@ C:\htb> mimikatz.exe sekurlsa::pth /domain:htb.local /user:jackie.may /rc4:ad11e
 
 ---
 
-## ## Enumeration with RSAT
+## Enumeration with RSAT
 
 If we compromise a domain-joined system (or a client has you perform an AD assessment from one of their workstations), we can leverage RSAT to enumerate AD. While RSAT will make GUI tools such as `Active Directory Users and Computers` and `ADSI Edit` available to us, the most important tool we have seen throughout this module is the PowerShell [Active Directory module](https://github.com/MicrosoftDocs/windows-powershell-docs/blob/main/docset/winserver2012-ps/adcsadministration/adcsadministration.md).
 
