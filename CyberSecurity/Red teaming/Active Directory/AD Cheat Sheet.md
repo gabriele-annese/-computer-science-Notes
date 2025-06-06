@@ -212,7 +212,6 @@ Get-ADObject -LDAPFilter '(&(objectCategory=person)(objectClass=user))' | select
 ```powershell
 Get-ADObject -LDAPFilter '(objectClass=group)' | select name
 ```
-
 ### LDAP - All domain controllers
 ```powershell
 Get-ADObject -LDAPFilter '(&(objectCategory=Computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))' | select name
