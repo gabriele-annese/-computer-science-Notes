@@ -16,20 +16,20 @@
 
 To enum users  
 ```bash
-crackmapexec smb 172.16.5.5 --users
+crackmapexec smb 172.16.5.5 -u '' -p '' --users
 ```
 
 
 To enum groups
 
 ```bash
-crackmapexec smb 172.16.5.5 --grousp
+crackmapexec smb 172.16.5.5 -u '' -p '' --grousp
 ```
 
 To enum shares
 
 ```bash
-crackmapexec smb 172.16.5.5 --shares
+crackmapexec smb 172.16.5.5 -u '' -p '' --shares
 ```
 
 ### **Spider**  
