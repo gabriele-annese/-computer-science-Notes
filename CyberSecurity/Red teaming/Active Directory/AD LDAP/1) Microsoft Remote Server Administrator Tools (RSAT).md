@@ -70,7 +70,7 @@ We can also install tools one at a time as needed.
 
 #### PowerShell - Install an RSAT Tool
 
-```powershell-session
+```powershell
 PS C:\htb> Add-WindowsCapability -Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0  –Online
 ```
 
