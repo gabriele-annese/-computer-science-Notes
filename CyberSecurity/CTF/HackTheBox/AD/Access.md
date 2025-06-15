@@ -42,14 +42,13 @@ browsing through folder we can found the `backup.mdb` file.
 >
 >A **Microsoft Access Database** file format is used to store data in a structured way.MDB files contain database queries, tables, and more that can be used to link to and store data from other files, like [XML](https://www.lifewire.com/what-is-an-xml-file-2622560) and [HTML](https://www.lifewire.com/htm-html-file-2621691), and applications, like [Excel](https://www.lifewire.com/what-is-microsoft-excel-3573533) and [SharePoint](https://www.lifewire.com/what-is-sharepoint-4176266). Its possible to query this file using TSQL
 
-Perfect now that we now what this file is how we can get in our attack machine? using `get` command in the ftp tool? Hehehehe not to easy my little hacker 
+Perfect now that we know what this file is how we can get in our attack machine? using `get` command in the ftp tool? 
+If you use `get` command directly the file will be corrupt, this because ftp has two transfers modes
 
-ftp has two transfers modes
-
-|Mode|Use Case|Problem|
-|---|---|---|
-|`ASCII`|Text files (e.g., `.txt`, `.html`)|Converts line endings (CR/LF) — corrupts binary files like `.mdb`|
-|`Binary`|All binary files (e.g., `.mdb`, `.zip`, `.jpg`)|Transfers bytes exactly as-is|
+| Mode              | Use Case                                        | Problem                                                           |
+| ----------------- | ----------------------------------------------- | ----------------------------------------------------------------- |
+| `ASCII` (default) | Text files (e.g., `.txt`, `.html`)              | Converts line endings (CR/LF) — corrupts binary files like `.mdb` |
+| `Binary`          | All binary files (e.g., `.mdb`, `.zip`, `.jpg`) | Transfers bytes exactly as-is                                     |
 
 in this case first to get we need to type `binary` to switch the transfer mode
 ![[Pasted image 20250614195913.png]]
