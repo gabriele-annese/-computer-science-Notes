@@ -54,7 +54,7 @@ in this case first to get we need to type `binary` to switch the transfer mode
 ![[Pasted image 20250614195913.png]]
 
 
-or u can use the `wget` command with the flag `--no-passive`
+or you can use the `wget` command with the flag `--no-passive`
 
 ```bash
 wget --no-passive-ftp ftp://Anonymous@10.129.237.193/Backups/backup.mdb
