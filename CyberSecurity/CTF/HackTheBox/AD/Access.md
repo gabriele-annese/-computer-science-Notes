@@ -229,10 +229,11 @@ TODO:
 - [ ] Pubblicare i repor
 # Loot
 
-| user      | pwd                              |
-| --------- | -------------------------------- |
-| security  | 4Cc3ssC0ntr0ller                 |
-| engineer  | access4u@security                |
-| user_flag | ae9212bf066803934e76eaf8b1556c26 |
-| root_flag |                                  |
+| user          | pwd                              |
+| ------------- | -------------------------------- |
+| security      | 4Cc3ssC0ntr0ller                 |
+| engineer      | access4u@security                |
+| user_flag     | ae9212bf066803934e76eaf8b1556c26 |
+| Administrator | 55Acc3ssS3cur1ty@megacorp        |
+
 
