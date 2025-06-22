@@ -98,11 +98,13 @@ TODO: Aggiungere come scaricare `iLSpy`
 
 ![[Pasted image 20250622103330.png]]
 
-to decrypt the base64 string usig XOR alghoritm we need the key value `armando`
+to decrypt the base64 string using XOR algorithm we need the value of **key** variable.
+`armando` is the **key** value
+
 ![[Pasted image 20250622103439.png]]
 
+XOR have is bidirectional means the same method to chiper the string will be use to decrypt. We can use the same c# fuctions founded in PE file but on my kali machine i prefer to use python. This is my python script to decrypt the pasdword
 
-XOR_decryption
 ```python
 
 import base64
@@ -126,8 +128,6 @@ for i in range(len(array)):
 d = decrypted.decode("utf-8")
 
 print(d)
-
-
 
 
 '''
