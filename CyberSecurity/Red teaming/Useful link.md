@@ -9,6 +9,8 @@
 ## OSEP
 - [Osep-nots](https://github.com/beauknowstech/OSEP-Everything)
 - [Chisel for Tunneling](https://github.com/jpillora/chisel)
+- [Exploit Development](https://dayzerosec.com/blog/2024/07/11/getting-started-2024.html)
+
 # Blogs
 ## CTF
 - https://0xdf.gitlab.io/
