@@ -12,8 +12,6 @@ By default SharpHound, if run without any options, will identify the domain to w
 
 #### Running SharpHound without any option
 
-  SharpHound - Data Collection from Windows
-
 ```cmd-session
 C:\tools> SharpHound.exe
 2023-01-10T09:10:27.5517894-06:00|INFORMATION|This version of SharpHound is compatible with the 4.2 Release of BloodHound
@@ -69,8 +67,6 @@ Once SharpHound terminates, by default, it will produce a zip file whose name st
 
 #### Start Service
 
-  SharpHound - Data Collection from Windows
-
 ```powershell-session
 PS C:\htb> net start neo4j
 The Neo4j Graph Database - neo4j service is starting..
@@ -78,8 +74,6 @@ The Neo4j Graph Database - neo4j service was started successfully.
 ```
 
 2. Launch `C:\Tools\BloodHound\BloodHound.exe` and log in with the following credentials:
-
-  SharpHound - Data Collection from Windows
 
 ```shell-session
 Username: neo4j
