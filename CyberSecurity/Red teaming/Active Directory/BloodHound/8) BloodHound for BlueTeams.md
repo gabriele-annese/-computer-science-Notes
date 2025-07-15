@@ -1,0 +1,3 @@
+In the previous section, we discussed cypher queries and how we can use them to discover paths leading us to our goal. We included some valuable queries for the BlueTeam to provide a general idea of how BlueTeamers can use BloodHound to identify weaknesses and create a plan of action to remedy them.
+
+In this section, we will discuss how BloodHound information can help us better protect our Active Directory infrastructure and share some tools that will make it easier to use BloodHound defensively.
