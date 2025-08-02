@@ -14,14 +14,14 @@ BOFs can accept arguments of different data types.  Arguments are extracted by 
 
 The following table maps the data types to the appropriate _beacon_generate.py_ command:
 
-|   |   |   |   |
-|---|---|---|---|
-|**Type**|**Description**|**Unpack With (C)**|**beacon_generate**|
-|b|Binary data|BeaconDataExtract|addFile|
-|i|4-byte integer|BeaconDataInt|addint|
-|s|2-byte short integer|BeaconDataShort|addshort|
-|z|Zero-terminated+encoded string|BeaconDataExtract|addString|
-|Z|Zero-terminated wide-char string|(wchar_t*)BeaconDataExtract|addWString|
+|          |                                  |                             |                     |
+| -------- | -------------------------------- | --------------------------- | ------------------- |
+| **Type** | **Description**                  | **Unpack With (C)**         | **beacon_generate** |
+| b        | Binary data                      | BeaconDataExtract           | addFile             |
+| i        | 4-byte integer                   | BeaconDataInt               | addint              |
+| s        | 2-byte short integer             | BeaconDataShort             | addshort            |
+| z        | Zero-terminated+encoded string   | BeaconDataExtract           | addString           |
+| Z        | Zero-terminated wide-char string | (wchar_t*)BeaconDataExtract | addWString          |
 
 We can generate an arbitrary string argument to use with the test BOF by using the _addString_ command in the Python script.  Given that we only intend to pass one argument to our BOF, we will next use the _generate_ command to write the packed BOF arguments to a file:
 
@@ -36,12 +36,12 @@ We can then run the test BOF with COFFLoader by passing the _bofargs.bin_ file
 
 Breaking down the arguments supplied to COFFLoader:
 
-|   |   |   |
-|---|---|---|
-|**Position**|**Value**|**Description**|
-|1|go|The entry point of the BOF|
-|2|test64.out|The BOF file to run|
-|3|bofargs.bin|The file containing BOF arguments|
+|              |             |                                   |     |
+| ------------ | ----------- | --------------------------------- | --- |
+| **Position** | **Value**   | **Description**                   |     |
+| 1            | go          | The entry point of the BOF        |     |
+| 2            | test64.out  | The BOF file to run               |     |
+| 3            | bofargs.bin | The file containing BOF arguments |     |
 
 The entry point of a BOF is defined on a per-BOF basis in the source code.  `Go` has traditionally served as the entry point (think a BOFs equivalent of a `main` function), but this is arbitrary and can be changed.  Specifying the 3rd argument (_bofargs.bin_) is optional; some BOFs do not expect any external arguments.
 
